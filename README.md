@@ -4,7 +4,6 @@ bash <(curl -sSL https://raw.githubusercontent.com/macbservices/setup_wordpress/
 
 
 # setup_painel_video
-``` bash
 bash <(curl -sSL https://raw.githubusercontent.com/macbservices/setup_wordpress/refs/heads/main/setup_painel_video.sh)
 
 
