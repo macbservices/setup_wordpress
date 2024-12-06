@@ -190,3 +190,15 @@ main() {
 }
 
 main
+
+# Criando o plugin Player Manager
+create_player_plugin() {
+    echo "Criando o plugin Player Manager..."
+    mkdir -p /var/www/$DOMAIN/wordpress/wp-content/plugins/player-manager
+    cat > /var/www/$DOMAIN/wordpress/wp-content/plugins/player-manager/player-manager.php <<EOL
+<INSIRA AQUI O CÓDIGO PHP ACIMA>
+EOL
+    chown -R www-data:www-data /var/www/$DOMAIN/wordpress/wp-content/plugins/player-manager
+    chmod -R 755 /var/www/$DOMAIN/wordpress/wp-content/plugins/player-manager
+}
+
