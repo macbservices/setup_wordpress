@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Função para verificar se o script está sendo executado como root
+# Verifica se o script está sendo executado como root
 check_root() {
     if [ "$(id -u)" != "0" ]; then
         echo "Este script deve ser executado como root!" 1>&2
@@ -8,14 +8,14 @@ check_root() {
     fi
 }
 
-# Atualizar o sistema e instalar dependências
+# Atualiza o sistema e instala dependências
 install_dependencies() {
     echo "Atualizando pacotes e instalando dependências..."
     apt update && apt upgrade -y
-    apt install -y nginx libnginx-mod-rtmp unzip
+    apt install -y nginx libnginx-mod-rtmp unzip ffmpeg
 }
 
-# Configurar o Nginx com RTMP
+# Configura o Nginx com suporte a RTMP e HLS
 configure_nginx_rtmp() {
     echo "Configurando Nginx com RTMP..."
     cat > /etc/nginx/nginx.conf <<EOL
@@ -45,9 +45,13 @@ http {
             try_files \$uri \$uri/ =404;
         }
 
+        # HLS
         location /live/ {
-            proxy_pass http://127.0.0.1:8080/live/;
-            proxy_buffering off;
+            types {
+                application/vnd.apple.mpegurl m3u8;
+                video/mp2t ts;
+            }
+            root /var/www/hls/;
         }
     }
 }
@@ -60,15 +64,22 @@ rtmp {
         application live {
             live on;
             record off;
+
+            hls on;
+            hls_path /var/www/hls/live;
+            hls_fragment 2s;
         }
     }
 }
 EOL
 
+    mkdir -p /var/www/hls/live
+    chown -R www-data:www-data /var/www/hls
+    chmod -R 755 /var/www/hls
     systemctl restart nginx
 }
 
-# Criar o site HTML com 10 players
+# Cria o site HTML com 10 players
 create_site() {
     echo "Criando site HTML..."
     mkdir -p /var/www/$DOMAIN
@@ -115,7 +126,6 @@ create_site() {
     </style>
 </head>
 <body>
-    <!-- 10 Players -->
 EOL
 
     for i in $(seq 1 10); do
@@ -138,16 +148,16 @@ EOL
 EOL
 }
 
-# Permissões para o diretório do site
+# Permissões para o site
 set_permissions() {
     echo "Definindo permissões para o site..."
     chown -R www-data:www-data /var/www/$DOMAIN
     chmod -R 755 /var/www/$DOMAIN
 }
 
-# Permissões para o script em caso de execução futura
+# Configura permissões para o script
 setup_script_permissions() {
-    echo "Configurando permissões de execução para o próprio script..."
+    echo "Configurando permissões para o script..."
     chmod +x $0
 }
 
@@ -165,8 +175,9 @@ main() {
     setup_script_permissions
 
     echo "Configuração concluída!"
+    echo "Inicie suas transmissões no OBS Studio utilizando a URL RTMP: rtmp://$DOMAIN/live"
+    echo "Cada stream deve usar uma 'Stream Key' como: canal1, canal2, ..., canal10."
     echo "Acesse o painel em http://$DOMAIN"
-    echo "Se precisar executar novamente, o script já tem permissões de execução."
 }
 
 main
